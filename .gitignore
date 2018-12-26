@@ -102,3 +102,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Resources & Results
+resources/
+results/
+
+# VS Code
+.vscode/
+

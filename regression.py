@@ -38,23 +38,11 @@ def get_vectors(ncs, gensim_w2v_model):
     return np.array(X), np.array(Y)
 
 
-
 def get_vector(w, gensim_w2v_model, length, seed):
     if w in gensim_w2v_model.vocab:
         return gensim_w2v_model.word_vec(w)
     else:
         return random_vec(length, seed)
-
-
-
-def train(inp_batches, tar_batches, model, num_epochs, optimizer, criterion):
-    print('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
-    try:
-        for ep in range(0, num_epochs):
-                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
-                logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
-    except KeyboardInterrupt:
-        pass
 
 
 def train_epoch(inp_batches, tar_batches, model, optimizer, criterion):
@@ -83,7 +71,7 @@ def train_batch(inp_batch, tar_batch, model, optimizer, criterion):
 
 
 def predict(eval_set_ncs, gensim_w2v_model, model):
-    losses = []
+    scored_ncs = {}
     X, Y = get_vectors(eval_set_ncs, gensim_w2v_model)
     if model_config.poly_degree > 1:
         X = get_poly_features(X, model_config.poly_degree)
@@ -95,23 +83,39 @@ def predict(eval_set_ncs, gensim_w2v_model, model):
             inp = inp.cuda()
             tar = tar.cuda()
         loss = F.smooth_l1_loss(model(inp.float()), tar.float())
-        losses.append(loss.data[0])
-    return losses
+        scored_ncs[eval_set_ncs[i]] = loss.data[0]
+    return scored_ncs
 
 
-
-def regression_score(ncs, eval_ncs, gensim_w2v_model):
-    X, Y = get_vectors(ncs, gensim_w2v_model)
+def train(train_ncs, predict_ncs, gensim_w2v_model, config):
+    # Prepare batches
+    X, Y = get_vectors(train_ncs, gensim_w2v_model)
     if model_config.poly_degree > 1:
         X = get_poly_features(X, model_config.poly_degree)
-    in_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+
+    # Set up model and optimization
     model = torch.nn.Linear((X.shape[1]), Y.shape[1])
-    optimizer = optim.SGD(model.parameters(), lr=float(model_config.learning_rate))
+    optimizer = optim.SGD(model.parameters(), lr=float(config['TRAINING']['LEARNING_RATE']))
     criterion = torch.nn.SmoothL1Loss()
 
-    train(in_batches, tar_batches, model, model_config.nb_epochs, optimizer, criterion)
+    # Train
+    logging.info('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
+    num_epochs = int(config['TRAINING']['NUM_EPOCHS'])
+    try:
+        for ep in range(0, num_epochs):
+                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
+                logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
+    except KeyboardInterrupt:
+        pass
+    return model
 
-    loss = predict(eval_ncs, gensim_w2v_model, model)
-    loss = np.add(loss, 0.001)
-    reg_score = np.true_divide(1, loss)
-    return reg_score
+
+def noncomp_error_score(predict_ncs, gensim_w2v_model, model):
+    scored_ncs = predict(predict_ncs, gensim_w2v_model, model)
+    for k, v in scored_ncs.items():
+        v = v[0].item()  # Get the value out of torch tensor
+        # v = np.add(v, 0.001)
+        # v = np.true_divide(1, v)
+        scored_ncs[k] = v
+    return scored_ncs

@@ -191,26 +191,26 @@ def get_poly_features(X, degree):
     return X2
 
 
-def get_non_comp_args():
-    parser = argparse.ArgumentParser(description="Calculates the non-compositionality of the two words noun compounds "
-                                                 "using regression.")
-    parser.add_argument('-p2vw', '--path-to-word-vectors', help="Path to word vectors", dest='p2vw')
-    parser.add_argument('-p2tc', '--path-to-train-compounds', help="Path to training compounds", dest='p2tc')
-    parser.add_argument('-p2ec', '--path-to-eval-compounds', help="Path to evaluation compounds", dest='p2ec')
-    parser.add_argument('-p2out', '--path-to-out-dir', help="Path to a directory for writing results", dest='p2out')
-    parser.add_argument('-rank', '--rank-evaluation-ncs', help="If true, compounds of the evaluation set will be ranked", dest='rank')
-    args = parser.parse_args()
-    return args
+# def get_non_comp_args():
+#     parser = argparse.ArgumentParser(description="Gets the arguments of the Calculates the non-compositionality of the two words noun compounds "
+#                                                  "using regression.")
+#     parser.add_argument('-p2vw', '--path-to-word-vectors', help="Path to word vectors", dest='p2vw')
+#     parser.add_argument('-p2tc', '--path-to-train-compounds', help="Path to training compounds", dest='p2tc')
+#     parser.add_argument('-p2ec', '--path-to-eval-compounds', help="Path to evaluation compounds", dest='p2ec')
+#     parser.add_argument('-p2out', '--path-to-out-dir', help="Path to a directory for writing results", dest='p2out')
+#     parser.add_argument('-rank', '--rank-evaluation-ncs', help="If true, compounds of the evaluation set will be ranked", dest='rank')
+#     args = parser.parse_args()
+#     return args
 
 
-def get_preprocess_args():
-    parser = argparse.ArgumentParser(description="Replace compounds in the corpus with their underscored version")
-    parser.add_argument('-p2tc', '--path-to-train-compounds', help="Path to training compounds", dest='p2tc')
-    parser.add_argument('-p2ec', '--path-to-eval-compounds', help="Path to evaluation compounds", dest='p2ec')
-    parser.add_argument('-p2corp', '--path-to-corpus', help="Path to corpus", dest='p2corp')
-    parser.add_argument('-p2out', '--path-to-out-dir', help="Path to a directory for writing results", dest='p2out')
-    args = parser.parse_args()
-    return args
+# def get_preprocess_args():
+#     parser = argparse.ArgumentParser(description="Replace compounds in the corpus with their underscored version")
+#     parser.add_argument('-p2tc', '--path-to-train-compounds', help="Path to training compounds", dest='p2tc')
+#     parser.add_argument('-p2ec', '--path-to-eval-compounds', help="Path to evaluation compounds", dest='p2ec')
+#     parser.add_argument('-p2corp', '--path-to-corpus', help="Path to corpus", dest='p2corp')
+#     parser.add_argument('-p2out', '--path-to-out-dir', help="Path to a directory for writing results", dest='p2out')
+#     args = parser.parse_args()
+#     return args
 
 
 def rank_with_score(ncs, score):
@@ -220,11 +220,10 @@ def rank_with_score(ncs, score):
     return ranked_ncs
 
 
-def write_score(eval_ncs, scores, path):
+def write_score(scored_ncs, path):
     outputfile = open(path, 'w')
-    for i in range(0, len(eval_ncs)):
-        # outputfile.write(eval_ncs[i] + ' ' + str(losses[i]) + '\n')
-        outputfile.write("%s\t%.3f\n" % (eval_ncs[i], scores[i]))
+    for k, v in scored_ncs.items():
+        outputfile.write("%s\t%.3f\n" % (k, v))
     outputfile.flush()
     outputfile.close()
 
