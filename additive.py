@@ -1,4 +1,4 @@
-from functions import get_vector
+from regression import get_vector
 import re
 from config import model_config
 import scipy
@@ -8,11 +8,8 @@ from math import sqrt
 
 
 def weighted_add(w1, w2, alpha=0.5, beta=0.5):
-
     mul_w1 = alpha*w1
     mul_w2 = alpha*w2
-
-
     return mul_w1+mul_w2
 
 

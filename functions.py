@@ -81,61 +81,60 @@ def replace_compounds(sentence, compounds):
     return sentence
 
 
-def get_vectors(ncs, gensim_w2v_model):
-    X = []
-    Y = []
-    for nc in ncs:
-        head, modifier = re.split(' ', nc)
-        w1w2 = np.append(get_vector(head, gensim_w2v_model, model_config.input_vector_length, model_config.seed),
-                         get_vector(modifier, gensim_w2v_model, model_config.input_vector_length, model_config.seed))
-        X.append(w1w2)
-        compound = head + '_' + modifier
-        y = get_vector(compound, gensim_w2v_model, model_config.output_vector_length, model_config.seed)
-        Y.append(y)
-    return np.array(X), np.array(Y)
+# def get_vectors(ncs, gensim_w2v_model):
+#     X = []
+#     Y = []
+#     for nc in ncs:
+#         head, modifier = re.split(' ', nc)
+#         w1w2 = np.append(get_vector(head, gensim_w2v_model, model_config.input_vector_length, model_config.seed),
+#                          get_vector(modifier, gensim_w2v_model, model_config.input_vector_length, model_config.seed))
+#         X.append(w1w2)
+#         compound = head + '_' + modifier
+#         y = get_vector(compound, gensim_w2v_model, model_config.output_vector_length, model_config.seed)
+#         Y.append(y)
+#     return np.array(X), np.array(Y)
 
 
-def get_vector(w, gensim_w2v_model, length, seed):
-    if w in gensim_w2v_model.vocab:
-        return gensim_w2v_model.word_vec(w)
-    else:
-        logging.info('Vector not found for ' + w + '. Returning random vector')
-        return random_vec(length, seed)
+# def get_vector(w, gensim_w2v_model, length, seed):
+#     if w in gensim_w2v_model.vocab:
+#         return gensim_w2v_model.word_vec(w)
+#     else:
+#         logging.info('Vector not found for ' + w + '. Returning random vector')
+#         return random_vec(length, seed)
 
 
-def train(inp_batches, tar_batches, model, num_epochs, optimizer, criterion):
-    print('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
-    try:
-        for ep in range(0, num_epochs):
-                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
-                logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
-    except KeyboardInterrupt:
-        pass
+# def train(inp_batches, tar_batches, model, num_epochs, optimizer, criterion):
+#     print('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
+#     try:
+#         for ep in range(0, num_epochs):
+#                 epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
+#                 logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
+#     except KeyboardInterrupt:
+#         pass
+
+# def train_epoch(inp_batches, tar_batches, model, optimizer, criterion):
+#     avg_loss = 0
+#     for i in range(0, inp_batches.shape[0]):
+#         avg_loss += train_batch(inp_batches[i], tar_batches[i], model, optimizer, criterion)
+#     avg_loss = float(avg_loss/inp_batches.shape[0])
+#     return avg_loss
 
 
-def train_epoch(inp_batches, tar_batches, model, optimizer, criterion):
-    avg_loss = 0
-    for i in range(0, inp_batches.shape[0]):
-        avg_loss += train_batch(inp_batches[i], tar_batches[i], model, optimizer, criterion)
-    avg_loss = float(avg_loss/inp_batches.shape[0])
-    return avg_loss
+# def train_batch(inp_batch, tar_batch, model, optimizer, criterion):
+#     inp = Variable(torch.from_numpy(inp_batch))
+#     tar = Variable(torch.from_numpy(tar_batch))
+#     mdl = model
+#     if use_cuda:
+#         mdl = mdl.cuda()
+#         inp = inp.cuda()
+#         tar = tar.cuda()
 
-
-def train_batch(inp_batch, tar_batch, model, optimizer, criterion):
-    inp = Variable(torch.from_numpy(inp_batch))
-    tar = Variable(torch.from_numpy(tar_batch))
-    mdl = model
-    if use_cuda:
-        mdl = mdl.cuda()
-        inp = inp.cuda()
-        tar = tar.cuda()
-
-    out = mdl(inp.float())
-    optimizer.zero_grad()
-    loss = criterion(out.float(), tar.float())
-    loss.backward()
-    optimizer.step()
-    return loss
+#     out = mdl(inp.float())
+#     optimizer.zero_grad()
+#     loss = criterion(out.float(), tar.float())
+#     loss.backward()
+#     optimizer.step()
+#     return loss
 
 
 def create_batch(inp, tar, batch_size):
@@ -157,21 +156,22 @@ def match_size(X, Y):
         return False
 
 
-def predict(eval_set_ncs, gensim_w2v_model, model):
-    losses = []
-    X, Y = get_vectors(eval_set_ncs, gensim_w2v_model)
-    if model_config.poly_degree > 1:
-        X = get_poly_features(X, model_config.poly_degree)
-    for i in range(0, X.shape[0]):
-        inp = Variable(torch.from_numpy(X[i, :]))
-        tar = Variable(torch.from_numpy(Y[i, :]))
-        if use_cuda:
-            # TODO check of the model is not cuda throw exception
-            inp = inp.cuda()
-            tar = tar.cuda()
-        loss = F.smooth_l1_loss(model(inp.float()), tar.float())
-        losses.append(loss.data[0])
-    return losses
+# def predict(eval_set_ncs, gensim_w2v_model, model):
+#     losses = []
+#     X, Y = get_vectors(eval_set_ncs, gensim_w2v_model)
+#     if model_config.poly_degree > 1:
+#         X = get_poly_features(X, model_config.poly_degree)
+
+#     for i in range(0, X.shape[0]):
+#         inp = Variable(torch.from_numpy(X[i, :]))
+#         tar = Variable(torch.from_numpy(Y[i, :]))
+#         if use_cuda:
+#             # TODO check of the model is not cuda throw exception
+#             inp = inp.cuda()
+#             tar = tar.cuda()
+#         loss = F.smooth_l1_loss(model(inp.float()), tar.float())
+#         losses.append(loss.data[0])
+#     return losses
 
 
 def print_every(line, current, every):
@@ -179,16 +179,16 @@ def print_every(line, current, every):
         print('processing line: ' + str(current))
 
 
-def random_vec(length, seed):
-    np.random.seed(seed)
-    vec = np.random.rand(length)
-    return vec
+# def random_vec(length, seed):
+#     np.random.seed(seed)
+#     vec = np.random.rand(length)
+#     return vec
 
 
-def get_poly_features(X, degree):
-    poly = PolynomialFeatures(degree, interaction_only=True)
-    X2 = poly.fit_transform(X)
-    return X2
+# def get_poly_features(X, degree):
+#     poly = PolynomialFeatures(degree, interaction_only=True)
+#     X2 = poly.fit_transform(X)
+#     return X2
 
 
 # def get_non_comp_args():
@@ -213,11 +213,11 @@ def get_poly_features(X, degree):
 #     return args
 
 
-def rank_with_score(ncs, score):
-    sort_index = np.argsort(score)
-    sort_index_descend = sort_index[::-1]
-    ranked_ncs = [ncs[i] for i in sort_index_descend]
-    return ranked_ncs
+# def rank_with_score(ncs, score):
+#     sort_index = np.argsort(score)
+#     sort_index_descend = sort_index[::-1]
+#     ranked_ncs = [ncs[i] for i in sort_index_descend]
+#     return ranked_ncs
 
 
 def write_score(scored_ncs, path):
@@ -237,23 +237,23 @@ def read_eval(args):
     return eval_ncs, eval_scores, eval_scores_inv
 
 
-def build_model(X, Y):
-    model = torch.nn.Linear((X.shape[1]), Y.shape[1])
-    optimizer = optim.SGD(model.parameters(), lr=float(model_config.learning_rate))
-    criterion = F.smooth_l1_loss
-    return model, optimizer, criterion
+# def build_model(X, Y):
+#     model = torch.nn.Linear((X.shape[1]), Y.shape[1])
+#     optimizer = optim.SGD(model.parameters(), lr=float(model_config.learning_rate))
+#     criterion = F.smooth_l1_loss
+#     return model, optimizer, criterion
 
 
-def regression_score(eval_ncs, gensim_w2v_model, regression_model):
-    loss = predict(eval_ncs, gensim_w2v_model, regression_model)
-    scores = np.add(loss, 0.0001)
-    return scores
+# def regression_score(eval_ncs, gensim_w2v_model, regression_model):
+#     loss = predict(eval_ncs, gensim_w2v_model, regression_model)
+#     scores = np.add(loss, 0.0001)
+#     return scores
 
 
-def normalize(data):
-    data = np.array(data)
-    normalized_data = (data - np.min(data)) / (np.max(data) - min(data))
-    return normalized_data
+# def normalize(data):
+#     data = np.array(data)
+#     normalized_data = (data - np.min(data)) / (np.max(data) - min(data))
+#     return normalized_data
 
 
 def write_to_file(lines, path_to_file):

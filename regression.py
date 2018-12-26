@@ -48,7 +48,12 @@ def get_vector(w, gensim_w2v_model, length, seed):
 def train_epoch(inp_batches, tar_batches, model, optimizer, criterion):
     avg_loss = 0
     for i in range(0, inp_batches.shape[0]):
-        avg_loss += train_batch(inp_batches[i], tar_batches[i], model, optimizer, criterion)
+        Y = tar_batches[i]
+        if model_config.poly_degree > 1:
+            X = get_poly_features(inp_batches[i], model_config.poly_degree)
+        else:
+            X = inp_batches[i]
+        avg_loss += train_batch(X, Y, model, optimizer, criterion)
     avg_loss = float(avg_loss/inp_batches.shape[0])
     return avg_loss
 
@@ -69,6 +74,30 @@ def train_batch(inp_batch, tar_batch, model, optimizer, criterion):
     return loss
 
 
+def train(train_ncs, predict_ncs, gensim_w2v_model, config):
+    # Prepare batches
+    X, Y = get_vectors(train_ncs, gensim_w2v_model)    
+    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+
+    # Set up model and optimization
+    input_size = X.shape[1] if model_config.poly_degree == 1 else  get_poly_features(inp_batches[0], model_config.poly_degree).shape[1]
+    output_size = Y.shape[1]
+    model = torch.nn.Linear(input_size, output_size)
+    optimizer = optim.SGD(model.parameters(), lr=float(config['TRAINING']['LEARNING_RATE']))
+    criterion = torch.nn.SmoothL1Loss()
+
+    # Train
+    logging.info('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
+    num_epochs = int(config['TRAINING']['NUM_EPOCHS'])
+    try:
+        for ep in range(0, num_epochs):
+                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
+                logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
+    except KeyboardInterrupt:
+        pass
+    return model
+
+
 
 def predict(eval_set_ncs, gensim_w2v_model, model):
     scored_ncs = {}
@@ -85,30 +114,6 @@ def predict(eval_set_ncs, gensim_w2v_model, model):
         loss = F.smooth_l1_loss(model(inp.float()), tar.float())
         scored_ncs[eval_set_ncs[i]] = loss.data[0]
     return scored_ncs
-
-
-def train(train_ncs, predict_ncs, gensim_w2v_model, config):
-    # Prepare batches
-    X, Y = get_vectors(train_ncs, gensim_w2v_model)
-    if model_config.poly_degree > 1:
-        X = get_poly_features(X, model_config.poly_degree)
-    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
-
-    # Set up model and optimization
-    model = torch.nn.Linear((X.shape[1]), Y.shape[1])
-    optimizer = optim.SGD(model.parameters(), lr=float(config['TRAINING']['LEARNING_RATE']))
-    criterion = torch.nn.SmoothL1Loss()
-
-    # Train
-    logging.info('Training can be stopped by ctrl+c at any time. The program will continue with evaluation')
-    num_epochs = int(config['TRAINING']['NUM_EPOCHS'])
-    try:
-        for ep in range(0, num_epochs):
-                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
-                logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
-    except KeyboardInterrupt:
-        pass
-    return model
 
 
 def noncomp_error_score(predict_ncs, gensim_w2v_model, model):

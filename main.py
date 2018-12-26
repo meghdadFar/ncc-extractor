@@ -1,4 +1,4 @@
-from functions import read_ncs, reddy_ncs, rank_with_score, write_score
+from functions import read_ncs, reddy_ncs, write_score
 from additive import weighted_add_score
 from gensim.models.keyedvectors import KeyedVectors
 from regression import noncomp_error_score, train
