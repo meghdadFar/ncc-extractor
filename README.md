@@ -18,20 +18,17 @@ and then replace their original form in the corpus. This can be done using `repl
 Possibly, the most efficient way of creating word embeddings from a corpus is using `fasttext`. Runnign `fasttext` on the corpus where certain compounds are concatenated
 with underscore leads to having embeddings for all words and concatenated compounds.  
 
-`./fasttext skipgram -dim 300 -input PATH_TO_NC_REPLACED_CORPUS -output OUTPUT_PREFIX`
+`./fasttext skipgram -dim 100 -input PATH_TO_NC_REPLACED_CORPUS -output OUTPUT_PREFIX`
 
 
-### Train the regression model, then rank and evaluate compounds based on their non-compositionality
+### Train the regression model, then rank the compounds based on their non-compositionality
 
-In order to train your regression model, first set the respective parameters in `config/model_config.py`. Then you need to specify path to three files
+In order to train your regression model, first set the respective meta parameters in `config/config.ini`. You should specify path to three files
 as input arguments: (1) path to word embeddings created by `fasttext` (or `word2vec`). (2) path to training compounds. An example of training compounds is provided in directory `data/`. 
-These noun compounds extracted from British National Corpus with a frequency of at least 10. (3) path to evaluation compounds. Currently, the script works with evaluation of 
-compunds of [Reddy et al 2011](http://www.aclweb.org/anthology/I11-1024) in the original format (available [here](http://sivareddy.in/downloads#compound_noun_compositionality) and in directory 'data/'). 
 
-Then, running `non-comp.py` script that will read the evaluation and train compounds, train a model, and evaluate the ranking with respect to human judgments provided in 
-Reddy et al 2011 data, in comparison with an additive baseline. You can also print the ranked compounds by setting the `rank` argument to `true`.   
+Then, run `main.py` that will read the train and to-be-predicted compounds, train a model, and score the to-be-predicted compounds with respect to their non-compositionality.     
 
-`python non-comp.py -p2vw PATH_TO_WOED_EMBEDDINGS -p2tc data/train_compounds.txt -p2ec data/eval_reddy_original_format.txt -p2out data/ -rank 'true'`
+`python main.py config/config.ini`
 
 ## Contact
 
