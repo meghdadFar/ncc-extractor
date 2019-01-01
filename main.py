@@ -8,11 +8,8 @@ import scipy
 import sys
 import configparser
 
-# TODO make the dimensions non parameter but extract them from input vectors
-
 
 if __name__ == '__main__':
-
 
     logging.info("Reading configuration from " + sys.argv[1])
     config = configparser.ConfigParser()
@@ -34,31 +31,5 @@ if __name__ == '__main__':
 
     write_score(sorted_scored_ncs, config['PATH']['OUTPUT']+'/reg_scores_ep' + config['TRAINING']['NUM_EPOCHS'] + '.txt')
 
-    
-    
-    
-    # Obsolete
-    
-    # reg_score = regression_score(train_ncs, predict_ncs, gensim_w2v_model)
-
-    # ranked_ncs = rank_with_score(predict_ncs, reg_score)
-    
-    # print(ranked_ncs)
-
-    # write_score(ranked_ncs, reg_score, config['PATH']['OUTPUT']+'/reg_scores.txt')
-    
-    # eval_ncs, eval_scores = reddy_ncs(config['PATH']['PREDICTS_COMPUNDS'])
-
-    # additive_score = weighted_add_score(eval_ncs, gensim_w2v_model)
-
-    # write_score(eval_ncs, additive_score, args.p2out+'additive_scores.txt')
-
-    # print('Spearman rho bet. human score and regression score', scipy.stats.spearmanr(reg_score, eval_scores))
-
-    # print('Spearman rho bet. human score and additive score', scipy.stats.spearmanr(additive_score, eval_scores))
-
-    # if args.rank == 'true':
-    #     print('Ranking based on regression model: ', rank_with_score(eval_ncs, reg_score))
-    #     print('Ranking based on additive model:  ', rank_with_score(eval_ncs, additive_score))
 
 

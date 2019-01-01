@@ -136,57 +136,43 @@ def predict(ncs, gensim_w2v_model, model):
 
 
 
-# def predict_batch(ncs, gensim_w2v_model, model, criterion):
+def predict_batch(ncs, gensim_w2v_model, model, criterion):
 
-#     # Prepare batches
-#     output_ncs = []
-#     output_scores = []
-#     start_index = 0
+    # Prepare batches
+    output_ncs = []
+    output_scores = []
+    start_index = 0
 
-#     X, Y = get_vectors(ncs, gensim_w2v_model)    
-#     inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+    X, Y = get_vectors(ncs, gensim_w2v_model)    
+    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
 
-#     criterion = torch.nn.SmoothL1Loss(reduce=False, size_average=True)
-#     # for i in range(0, inp_batches.shape[0]):
-#     logging.info('Scoring batches')
-#     for i in tqdm.tqdm(range(0, inp_batches.shape[0])):
-#         Y = tar_batches[i]
-#         if model_config.poly_degree > 1:
-#             X = get_poly_features(inp_batches[i], model_config.poly_degree)
-#         else:
-#             X = inp_batches[i]
+    criterion = torch.nn.SmoothL1Loss(reduce=False, size_average=True)
+    logging.info('Scoring batches')
+    for i in tqdm.tqdm(range(0, inp_batches.shape[0])):
+        Y = tar_batches[i]
+        if model_config.poly_degree > 1:
+            X = get_poly_features(inp_batches[i], model_config.poly_degree)
+        else:
+            X = inp_batches[i]
         
-#         inp = Variable(torch.from_numpy(X))
-#         tar = Variable(torch.from_numpy(Y))
+        inp = Variable(torch.from_numpy(X))
+        tar = Variable(torch.from_numpy(Y))
 
-#         if use_cuda:
-#             inp = inp.cuda()
-#             tar = tar.cuda()
+        if use_cuda:
+            inp = inp.cuda()
+            tar = tar.cuda()
         
-#         out = model(inp.float())
-#         loss = criterion(out.float(), tar.float())
+        out = model(inp.float())
+        loss = criterion(out.float(), tar.float())
+        end_index = start_index + model_config.batch_size 
 
-#         print(loss.shape)
+        output_ncs.extend(ncs[start_index:end_index])
+        output_scores.extend(loss.tolist())
+        start_index +=  model_config.batch_size
 
-#         end_index = start_index + model_config.batch_size 
-
-#         output_ncs.extend(ncs[start_index:end_index])
-#         output_scores.extend(loss.tolist())
-
-#         # print(start_index, len(output_ncs), len(output_scores))
-
-#         start_index +=  model_config.batch_size
-
-#     return output_ncs, output_scores
+    return output_ncs, output_scores
 
 
 def noncomp_error_score(predict_ncs, gensim_w2v_model, model, criterion):
-    # ncs, scores = predict(predict_ncs, gensim_w2v_model, model, criterion)
     scored_ncs = predict(predict_ncs, gensim_w2v_model, model)
-    # for k, v in scored_ncs.items():
-    #     scored_ncs[k] = v + 0.001
-    # for i in range(len(ncs)):
-        # print(ncs[i])
-        # print(scores[i])
-        # scored_ncs[nc[i]] = scores[i] + 0.001
     return scored_ncs
