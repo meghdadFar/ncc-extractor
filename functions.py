@@ -8,7 +8,6 @@ from nltk.tokenize import word_tokenize
 from sklearn.preprocessing import PolynomialFeatures
 import codecs
 import argparse
-from config import model_config
 import torch.optim as optim
 
 
@@ -16,15 +15,15 @@ import torch.optim as optim
 use_cuda = torch.cuda.is_available()
 
 
-def read_ncs(file_path):
+def read_ncs(file_path, min_constituent_len):
     with open(file_path, 'r') as f:
         lines = f.read().splitlines()
-        lines = list(line for line in lines if is_valid(line))
+        lines = list(line for line in lines if is_valid(line, min_constituent_len))
     return lines
 
 
-def is_valid(input_str):
-    mcl = model_config.min_constituent_len
+def is_valid(input_str, min_constituent_len):
+    mcl = min_constituent_len
     if input_str:
         w1, w2 = input_str.split(' ')
         if len(w1) > mcl and len(w2) > mcl:

@@ -17,19 +17,16 @@ if __name__ == '__main__':
 
     gensim_w2v_model = KeyedVectors.load_word2vec_format(config['PATH']['GENSIM_MODEL'], binary=False)
 
-    train_ncs = read_ncs(config['PATH']['TRAIN_COMPUNDS'])
+    train_ncs = read_ncs(config['PATH']['TRAIN_COMPUNDS'], int(config['GENERAL']['MIN_CONSTITUENT_LEN']))
 
-    predict_ncs = read_ncs(config['PATH']['PREDICT_COMPUNDS'])
+    predict_ncs = read_ncs(config['PATH']['PREDICT_COMPUNDS'], int(config['GENERAL']['MIN_CONSTITUENT_LEN']))
 
-    predict_ncs = predict_ncs[0:1000]
+    predict_ncs = predict_ncs[0:100]
 
     model, criterion = train(train_ncs, predict_ncs, gensim_w2v_model, config)
 
-    scored_ncs = noncomp_error_score(predict_ncs, gensim_w2v_model, model, criterion)
+    scored_ncs = noncomp_error_score(predict_ncs, gensim_w2v_model, model, criterion, config)
 
     sorted_scored_ncs = dict(sorted(scored_ncs.items(), key=lambda kv: kv[1], reverse=True))
 
     write_score(sorted_scored_ncs, config['PATH']['OUTPUT']+'/reg_scores_ep' + config['TRAINING']['NUM_EPOCHS'] + '.txt')
-
-
-

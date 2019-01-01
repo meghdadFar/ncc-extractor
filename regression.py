@@ -1,4 +1,3 @@
-from config import model_config
 from functions import create_batch
 import numpy as np
 import torch
@@ -25,16 +24,16 @@ def get_poly_features(X, degree):
     return X2
 
 
-def get_vectors(ncs, gensim_w2v_model):
+def get_vectors(ncs, gensim_w2v_model, config):
     X = []
     Y = []
     for nc in ncs:
         head, modifier = re.split(' ', nc)
-        w1w2 = np.append(get_vector(head, gensim_w2v_model, model_config.input_vector_length, model_config.seed),
-                         get_vector(modifier, gensim_w2v_model, model_config.input_vector_length, model_config.seed))
+        w1w2 = np.append(get_vector(head, gensim_w2v_model, int(config['GENERAL']['INPUT_VEC_LEN']), int(config['GENERAL']['SEED'])),
+                         get_vector(modifier, gensim_w2v_model, int(config['GENERAL']['INPUT_VEC_LEN']), int(config['GENERAL']['SEED'])))
         X.append(w1w2)
         compound = head + '_' + modifier
-        y = get_vector(compound, gensim_w2v_model, model_config.output_vector_length, model_config.seed)
+        y = get_vector(compound, gensim_w2v_model, int(config['GENERAL']['OUTPUT_VEC_LEN']), int(config['GENERAL']['SEED']))
         Y.append(y)
     return np.array(X), np.array(Y)
 
@@ -46,13 +45,13 @@ def get_vector(w, gensim_w2v_model, length, seed):
         return random_vec(length, seed)
 
 
-def train_epoch(inp_batches, tar_batches, model, optimizer, criterion):
+def train_epoch(inp_batches, tar_batches, model, optimizer, criterion, config):
     avg_loss = 0
     logging.info('Training batches')
     for i in tqdm.tqdm(range(0, inp_batches.shape[0])):
         Y = tar_batches[i]
-        if model_config.poly_degree > 1:
-            X = get_poly_features(inp_batches[i], model_config.poly_degree)
+        if int(config['GENERAL']['POLY_DEGREE']) > 1:
+            X = get_poly_features(inp_batches[i], int(config['GENERAL']['POLY_DEGREE']))
         else:
             X = inp_batches[i]
         avg_loss += train_batch(X, Y, model, optimizer, criterion)
@@ -76,11 +75,11 @@ def train_batch(inp_batch, tar_batch, model, optimizer, criterion):
 
 def train(train_ncs, predict_ncs, gensim_w2v_model, config):
     # Prepare batches
-    X, Y = get_vectors(train_ncs, gensim_w2v_model)    
-    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+    X, Y = get_vectors(train_ncs, gensim_w2v_model, config)    
+    inp_batches, tar_batches = create_batch(X, Y, int(config['TRAINING']['BATCH_SIZE']))
 
     # Set up model and optimization
-    input_size = X.shape[1] if model_config.poly_degree == 1 else  get_poly_features(inp_batches[0], model_config.poly_degree).shape[1]
+    input_size = X.shape[1] if int(config['GENERAL']['POLY_DEGREE']) == 1 else  get_poly_features(inp_batches[0], int(config['GENERAL']['POLY_DEGREE'])).shape[1]
     output_size = Y.shape[1]
     model = torch.nn.Linear(input_size, output_size)
     if use_cuda:
@@ -93,7 +92,7 @@ def train(train_ncs, predict_ncs, gensim_w2v_model, config):
     num_epochs = int(config['TRAINING']['NUM_EPOCHS'])
     try:
         for ep in range(0, num_epochs):
-                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion)
+                epoch_loss = train_epoch(inp_batches, tar_batches, model, optimizer, criterion, config)
                 logging.info('epoch '+str(ep) +'\tloss ' + str(epoch_loss))
     except KeyboardInterrupt:
         pass
@@ -101,23 +100,23 @@ def train(train_ncs, predict_ncs, gensim_w2v_model, config):
 
 
 
-def predict(ncs, gensim_w2v_model, model):
+def predict(ncs, gensim_w2v_model, model, config):
     scored_ncs = {}
-    X, Y = get_vectors(ncs, gensim_w2v_model)
+    X, Y = get_vectors(ncs, gensim_w2v_model, config)
 
     logging.info('Scoring compounds')
 
     for nc in tqdm.tqdm(ncs):
         head, modifier = re.split(' ', nc)
-        w1w2 = np.append(get_vector(head, gensim_w2v_model, model_config.input_vector_length, model_config.seed),
-                         get_vector(modifier, gensim_w2v_model, model_config.input_vector_length, model_config.seed))
+        w1w2 = np.append(get_vector(head, gensim_w2v_model, int(config['GENERAL']['INPUT_VEC_LEN']), int(config['GENERAL']['SEED'])),
+                         get_vector(modifier, gensim_w2v_model, int(config['GENERAL']['INPUT_VEC_LEN']), int(config['GENERAL']['SEED'])))
         compound = head + '_' + modifier
-        y = get_vector(compound, gensim_w2v_model, model_config.output_vector_length, model_config.seed)
+        y = get_vector(compound, gensim_w2v_model, int(config['GENERAL']['OUTPUT_VEC_LEN']), int(config['GENERAL']['SEED']))
 
         y = y.reshape(1, -1)
         w1w2 = w1w2.reshape(1, -1)
 
-        inp = get_poly_features(w1w2, model_config.poly_degree) if model_config.poly_degree > 1 else w1w2
+        inp = get_poly_features(w1w2, int(config['GENERAL']['POLY_DEGREE'])) if int(config['GENERAL']['POLY_DEGREE']) > 1 else w1w2
 
         inp = Variable(torch.from_numpy(np.array(inp)))
         tar = Variable(torch.from_numpy(y))
@@ -136,22 +135,22 @@ def predict(ncs, gensim_w2v_model, model):
 
 
 
-def predict_batch(ncs, gensim_w2v_model, model, criterion):
+def predict_batch(ncs, gensim_w2v_model, model, criterion, config):
 
     # Prepare batches
     output_ncs = []
     output_scores = []
     start_index = 0
 
-    X, Y = get_vectors(ncs, gensim_w2v_model)    
-    inp_batches, tar_batches = create_batch(X, Y, model_config.batch_size)
+    X, Y = get_vectors(ncs, gensim_w2v_model, config)    
+    inp_batches, tar_batches = create_batch(X, Y, int(config['TRAINING']['BATCH_SIZE']))
 
     criterion = torch.nn.SmoothL1Loss(reduce=False, size_average=True)
     logging.info('Scoring batches')
     for i in tqdm.tqdm(range(0, inp_batches.shape[0])):
         Y = tar_batches[i]
-        if model_config.poly_degree > 1:
-            X = get_poly_features(inp_batches[i], model_config.poly_degree)
+        if int(config['GENERAL']['POLY_DEGREE']) > 1:
+            X = get_poly_features(inp_batches[i], int(config['GENERAL']['POLY_DEGREE']))
         else:
             X = inp_batches[i]
         
@@ -164,15 +163,15 @@ def predict_batch(ncs, gensim_w2v_model, model, criterion):
         
         out = model(inp.float())
         loss = criterion(out.float(), tar.float())
-        end_index = start_index + model_config.batch_size 
+        end_index = start_index + int(config['TRAINING']['BATCH_SIZE']) 
 
         output_ncs.extend(ncs[start_index:end_index])
         output_scores.extend(loss.tolist())
-        start_index +=  model_config.batch_size
+        start_index += int(config['TRAINING']['BATCH_SIZE'])
 
     return output_ncs, output_scores
 
 
-def noncomp_error_score(predict_ncs, gensim_w2v_model, model, criterion):
-    scored_ncs = predict(predict_ncs, gensim_w2v_model, model)
+def noncomp_error_score(predict_ncs, gensim_w2v_model, model, criterion, config):
+    scored_ncs = predict(predict_ncs, gensim_w2v_model, model, config)
     return scored_ncs
